@@ -501,24 +501,24 @@
                     
                     <div class="form-group">
                         <label>Total Contract Value (AED)</label>
-                        <input type="number" id="contractValue" value="50000000" oninput="calculateBenchmark()">
+                        <input type="number" id="contractValue" placeholder="Enter value" oninput="calculateBenchmark()">
                         <small style="color: #64748b;">Used to calculate Rework Risk (5%)</small>
                     </div>
 
                     <div class="form-group">
                         <label>Annual Engineering Payroll (AED)</label>
-                        <input type="number" id="payroll" value="2500000" oninput="calculateBenchmark()">
+                        <input type="number" id="payroll" placeholder="Enter value" oninput="calculateBenchmark()">
                         <small style="color: #64748b;">Used to calculate Admin Drag (30%)</small>
                     </div>
 
                     <div class="form-group">
                         <label>Avg. Salary of Departing Staff (AED/Year)</label>
-                        <input type="number" id="avgSalary" value="120000" oninput="calculateBenchmark()">
+                        <input type="number" id="avgSalary" placeholder="Enter value" oninput="calculateBenchmark()">
                     </div>
 
                     <div class="form-group">
                         <label>Number of Staff Exits (Last 12 Months)</label>
-                        <input type="number" id="exits" value="4" oninput="calculateBenchmark()">
+                        <input type="number" id="exits" placeholder="Enter value" oninput="calculateBenchmark()">
                     </div>
                 </div>
 
@@ -527,19 +527,19 @@
                     
                     <div class="result-item">
                         <div class="result-label">Potential Rework Costs</div>
-                        <div class="result-value" id="resRework">AED 2,500,000</div>
+                        <div class="result-value" id="resRework">AED 0</div>
                         <div class="result-desc">Based on 5% CII Benchmark</div>
                     </div>
 
                     <div class="result-item">
                         <div class="result-label">Wasted Admin Salary</div>
-                        <div class="result-value" id="resAdmin">AED 750,000</div>
+                        <div class="result-value" id="resAdmin">AED 0</div>
                         <div class="result-desc">30% Efficiency Loss</div>
                     </div>
 
                     <div class="result-item">
                         <div class="result-label">Turnover Impact</div>
-                        <div class="result-value" id="resTurnover">AED 240,000</div>
+                        <div class="result-value" id="resTurnover">AED 0</div>
                         <div class="result-desc">Recruitment & Ramp-up Costs</div>
                     </div>
                 </div>
@@ -552,17 +552,17 @@
                     
                     <div class="form-group">
                         <label>Avg. Hourly Rate (AED)</label>
-                        <input type="number" id="hourlyRate" value="150" oninput="calculateAudit()">
+                        <input type="number" id="hourlyRate" placeholder="Enter value" oninput="calculateAudit()">
                     </div>
 
                     <div class="form-group">
                         <label>Non-Productive Hours per Week (Per Person)</label>
-                        <input type="number" id="wastedHours" value="6" oninput="calculateAudit()">
+                        <input type="number" id="wastedHours" placeholder="Enter value" oninput="calculateAudit()">
                     </div>
 
                     <div class="form-group">
                         <label>Total Engineering Staff Count</label>
-                        <input type="number" id="staffCount" value="12" oninput="calculateAudit()">
+                        <input type="number" id="staffCount" placeholder="Enter value" oninput="calculateAudit()">
                     </div>
                 </div>
 
@@ -571,12 +571,12 @@
                     
                     <div class="result-item">
                         <div class="result-label">Weekly Loss</div>
-                        <div class="result-value" id="resWeekly">AED 10,800</div>
+                        <div class="result-value" id="resWeekly">AED 0</div>
                     </div>
 
                     <div class="result-item">
                         <div class="result-label">Annual Loss</div>
-                        <div class="result-value" id="resAnnual">AED 561,600</div>
+                        <div class="result-value" id="resAnnual">AED 0</div>
                         <div class="result-desc">Assuming 52 working weeks</div>
                     </div>
                 </div>
@@ -630,6 +630,21 @@
     </div>
 
     <script>
+        // --- CONFIGURATION: EDIT DEFAULTS HERE ---
+        const PRESETS = {
+            benchmark: {
+                contractValue: 23000000000, // Total Contract Value
+                payroll: 21978000,        // Annual Engineering Payroll
+                avgSalary: 6246000,       // Avg Salary of Departing Staff
+                exits: 26                 // Number of Staff Exits
+            },
+            audit: {
+                hourlyRate: 150,         // Avg Hourly Rate
+                wastedHours: 6,          // Wasted Hours/Week
+                staffCount: 12           // Total Staff Count
+            }
+        };
+
         // NAVIGATION LOGIC
         function showSection(sectionId) {
             // Hide all sections
@@ -695,9 +710,22 @@
             return 'AED ' + num.toLocaleString('en-US', {maximumFractionDigits: 0});
         }
 
-        // Initialize calculators
-        calculateBenchmark();
-        calculateAudit();
+        // Initialize Defaults on Load
+        window.onload = function() {
+            // Apply Presets from Config
+            document.getElementById('contractValue').value = PRESETS.benchmark.contractValue;
+            document.getElementById('payroll').value = PRESETS.benchmark.payroll;
+            document.getElementById('avgSalary').value = PRESETS.benchmark.avgSalary;
+            document.getElementById('exits').value = PRESETS.benchmark.exits;
+
+            document.getElementById('hourlyRate').value = PRESETS.audit.hourlyRate;
+            document.getElementById('wastedHours').value = PRESETS.audit.wastedHours;
+            document.getElementById('staffCount').value = PRESETS.audit.staffCount;
+
+            // Run initial calculation
+            calculateBenchmark();
+            calculateAudit();
+        }
 
     </script>
 </body>
