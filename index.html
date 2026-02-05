@@ -43,6 +43,7 @@
             padding: 30px;
             box-shadow: 4px 0 15px rgba(0,0,0,0.1);
             z-index: 10;
+            flex-shrink: 0; /* Prevent shrinking */
         }
 
         .logo {
@@ -160,6 +161,25 @@
             color: var(--accent);
             opacity: 0.8;
         }
+        
+        /* CTA Card Specifics */
+        .cta-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .cta-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 16px;
+            white-space: nowrap;
+        }
 
         /* CALCULATOR STYLES */
         .calculator-container {
@@ -232,6 +252,7 @@
             font-weight: 700;
             color: var(--accent);
             font-family: 'Montserrat', sans-serif;
+            word-break: break-all; /* Prevent overflow on mobile */
         }
 
         .result-desc {
@@ -247,6 +268,7 @@
             padding: 5px;
             border-radius: 8px;
             width: fit-content;
+            flex-wrap: wrap; /* allow wrap on mobile */
         }
 
         .tab {
@@ -284,6 +306,110 @@
             background: #eff6ff;
             color: var(--primary);
             margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        /* --- MOBILE RESPONSIVE QUERIES --- */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column;
+                height: auto;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+            /* Turn Sidebar into Top Bar */
+            .sidebar {
+                width: 100%;
+                height: auto;
+                flex-direction: row;
+                flex-wrap: wrap;
+                padding: 15px;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                position: relative;
+            }
+
+            .logo {
+                width: 100%;
+                margin-bottom: 15px;
+                justify-content: center;
+                font-size: 20px;
+            }
+
+            .nav-btn {
+                flex: 1;
+                margin-bottom: 0;
+                margin-right: 5px;
+                justify-content: center;
+                font-size: 13px;
+                padding: 10px;
+                white-space: nowrap;
+            }
+            
+            .nav-btn:hover {
+                transform: none;
+            }
+
+            /* Hide footer text on mobile */
+            .sidebar > div[style*="margin-top: auto"] {
+                display: none;
+            }
+
+            /* Main Content Adjustments */
+            .main-content {
+                padding: 20px;
+                overflow: visible;
+                height: auto;
+            }
+
+            .header h1 {
+                font-size: 26px;
+            }
+            
+            .header p {
+                font-size: 16px;
+            }
+
+            /* Stack Calculator */
+            .calculator-container {
+                grid-template-columns: 1fr;
+            }
+
+            .calc-inputs {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+                padding: 25px;
+            }
+
+            .calc-results {
+                padding: 25px;
+            }
+            
+            .result-value {
+                font-size: 28px;
+            }
+
+            /* Stack CTA Card */
+            .cta-container {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+
+            .cta-btn {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .tabs {
+                width: 100%;
+            }
+            
+            .tab {
+                flex: 1;
+                text-align: center;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -299,10 +425,10 @@
             <i class="fa-solid fa-gauge-high"></i> Overview
         </button>
         <button class="nav-btn" onclick="showSection('calculator')">
-            <i class="fa-solid fa-calculator"></i> Impact Calculator
+            <i class="fa-solid fa-calculator"></i> Impact Calc
         </button>
         <button class="nav-btn" onclick="showSection('deep-dive')">
-            <i class="fa-solid fa-magnifying-glass-chart"></i> Detailed Breakdown
+            <i class="fa-solid fa-list-check"></i> Breakdown
         </button>
         
         <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
@@ -344,12 +470,12 @@
             </div>
 
             <div class="card" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); color: white;">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div class="cta-container">
                     <div>
                         <h2 style="color: white; margin-bottom: 10px;">Calculate Your Exposure</h2>
                         <p style="color: #cbd5e1; max-width: 600px;">Input your specific project values and payroll data to see a live estimation of the financial impact based on industry benchmarks.</p>
                     </div>
-                    <button onclick="showSection('calculator')" style="background: var(--accent); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 16px;">
+                    <button class="cta-btn" onclick="showSection('calculator')">
                         Open Calculator <i class="fa-solid fa-arrow-right" style="margin-left: 10px;"></i>
                     </button>
                 </div>
@@ -514,7 +640,6 @@
             document.getElementById(sectionId).classList.add('active');
 
             // Activate nav button
-            // Simple logic: find button that calls this function with this ID
             const buttons = document.querySelectorAll('.nav-btn');
             if(sectionId === 'dashboard') buttons[0].classList.add('active');
             if(sectionId === 'calculator') buttons[1].classList.add('active');
