@@ -3,360 +3,577 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quantifying Engineering Risks</title>
+    <title>Engineering Risk Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    
     <style>
-    /* --- 1. GLOBAL RESET --- */
-    * { box-sizing: border-box; }
-
-    body {
-        background-color: #555; /* Dark grey for screen viewing */
-        margin: 0;
-        padding: 40px 0;
-        font-family: 'Roboto', sans-serif;
-        
-        /* FIX: Using Block layout instead of Flex to prevent print errors */
-        display: block; 
-        text-align: center; /* Centers slides on screen */
-    }
-
-    /* --- 2. SLIDE CONTAINER --- */
-    .slide-container {
-        /* Screen Settings */
-        display: inline-block; /* Allows centering via text-align */
-        vertical-align: top;
-        text-align: left; /* Resets text alignment inside the slide */
-        position: relative;
-        width: 1280px;
-        height: 720px;
-        background-color: #ffffff;
-        margin-bottom: 50px; /* Space between slides on screen */
-        padding: 50px;
-        box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        overflow: hidden; 
-    }
-
-    /* Slide Background Pattern */
-    .slide-container::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background-image: 
-            linear-gradient(rgba(224, 231, 255, 0.3) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(224, 231, 255, 0.3) 1px, transparent 1px);
-        background-size: 40px 40px;
-        z-index: 0;
-        pointer-events: none;
-    }
-
-    /* Bottom Color Bar */
-    .slide-container::after {
-        content: '';
-        position: absolute;
-        bottom: 0; left: 0;
-        width: 100%;
-        height: 8px;
-        background: linear-gradient(90deg, #1e3a8a 0%, #f59e0b 100%);
-        z-index: 2;
-    }
-
-    /* Ensure content sits above background */
-    .slide-container > * { position: relative; z-index: 1; }
-
-    /* --- 3. TYPOGRAPHY --- */
-    h1, h2, h3 { font-family: 'Montserrat', sans-serif; margin: 0; line-height: 1.2; }
-    h1 { font-size: 56px; font-weight: 700; color: #1e3a8a; }
-    h2 { font-size: 42px; font-weight: 600; color: #1e3a8a; margin-bottom: 30px; }
-    h3 { font-size: 28px; font-weight: 600; color: #334155; margin-bottom: 15px; }
-    p, li, td { color: #475569; font-size: 20px; line-height: 1.6; }
-
-    /* Lists */
-    ul { list-style: none; padding: 0; }
-    ul li { padding-left: 30px; position: relative; margin-bottom: 12px; }
-    ul li::before {
-        content: '\f0da'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
-        color: #f59e0b; position: absolute; left: 0; top: 2px;
-    }
-
-    /* --- 4. INTERNAL LAYOUTS --- */
-    /* Flex Helper for inside slides */
-    .content-area { display: flex; flex-direction: column; justify-content: center; height: 100%; width: 100%; }
-
-    /* Title Slide */
-    .slide-container.title-bg {
-        background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
-        padding: 0;
-    }
-    .slide-container.title-bg h1 { color: white; }
-    .slide-container.title-bg p { color: #cbd5e1; }
-    
-    /* Visual Box */
-    .visual-scene {
-        width: 100%; height: 100%; min-height: 400px;
-        background: #f8fafc; border: 1px solid #cbd5e1;
-        display: flex; justify-content: center; align-items: center;
-        border-radius: 8px;
-    }
-    .visual-scene i { font-size: 140px; color: #1e3a8a; }
-
-    /* Columns */
-    .two-column-tiled { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; height: 100%; }
-    .tile { background: #f8fafc; border-left: 5px solid #1e3a8a; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
-    .img-right-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 50px; align-items: center; height: 100%; }
-    
-    /* Tables & Formulas */
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th { background: #1e3a8a; color: white; padding: 15px; text-align: left; }
-    td { padding: 15px; border-bottom: 1px solid #e2e8f0; background: white; }
-    .formula-box { background: #1e293b; color: white; padding: 20px; border-radius: 8px; font-family: monospace; display: flex; justify-content: center; margin-bottom: 20px; }
-    
-    /* Benchmarks */
-    .benchmark-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; text-align: center; }
-    .benchmark-card { background: #eff6ff; padding: 40px 20px; border: 1px solid #bfdbfe; border-radius: 12px; }
-    .benchmark-card .number { font-size: 80px; font-weight: 700; color: #1e3a8a; }
-
-    /* Bleed Layout */
-    .slide-container.bleed-image-layout { display: grid; grid-template-columns: 1fr 1fr; padding: 0; gap: 0; }
-    .slide-container.bleed-image-layout .content-container { padding: 60px; display: flex; flex-direction: column; justify-content: center; }
-    .slide-container.bleed-image-layout .visual-scene { height: 720px; border-radius: 0; border: none; }
-    
-    /* Icon Grid */
-    .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
-    .icon-card { background: white; border: 1px solid #e2e8f0; padding: 30px; text-align: center; border-radius: 8px; }
-    .icon-card i { font-size: 48px; color: #1e3a8a; margin-bottom: 20px; }
-
-    /* --- 5. PRINT / PDF SETTINGS (CRITICAL) --- */
-    @media print {
-        @page {
-            size: 1280px 720px; /* Exact slide size */
-            margin: 0;          /* Remove printer margins */
+        :root {
+            --primary: #1e3a8a; /* Navy */
+            --primary-dark: #0f172a;
+            --accent: #f59e0b; /* Safety Orange */
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --text-main: #334155;
+            --text-light: #64748b;
+            --success: #22c55e;
+            --danger: #ef4444;
         }
-        
+
+        * { box-sizing: border-box; transition: all 0.3s ease; }
+
         body {
+            background-color: var(--bg);
+            font-family: 'Roboto', sans-serif;
             margin: 0;
-            padding: 0;
-            background-color: white;
-            /* Force block layout to ensure pages break correctly */
-            display: block !important; 
+            display: flex;
+            height: 100vh;
+            color: var(--text-main);
+            overflow: hidden;
         }
 
-        .slide-container {
-            /* Forces a page break after every slide */
-            break-after: page !important;
-            page-break-after: always !important;
-            
-            /* Resets screen margins */
-            margin: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-            
-            /* Ensures strict sizing */
-            width: 1280px !important;
-            height: 720px !important;
-            display: block !important;
-            overflow: hidden !important;
+        /* SIDEBAR NAVIGATION */
+        .sidebar {
+            width: 280px;
+            background: var(--primary-dark);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 30px;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            z-index: 10;
         }
 
-        /* Prevents extra blank page at the end */
-        .slide-container:last-of-type {
-            break-after: avoid !important;
-            page-break-after: avoid !important;
+        .logo {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 50px;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
-    }
+
+        .logo i { color: var(--accent); }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            text-align: left;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.05);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .nav-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
+        }
+
+        /* MAIN CONTENT AREA */
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* SECTIONS */
+        .section {
+            display: none;
+            animation: fadeIn 0.5s ease;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* DASHBOARD HEADER */
+        .header {
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 36px;
+            color: var(--primary);
+            margin: 0 0 10px 0;
+        }
+        .header p { color: var(--text-light); font-size: 18px; margin: 0; }
+
+        /* CARDS */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border: 1px solid #e2e8f0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--primary);
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-icon {
+            font-size: 32px;
+            color: var(--accent);
+            opacity: 0.8;
+        }
+
+        /* CALCULATOR STYLES */
+        .calculator-container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .calc-inputs {
+            padding: 40px;
+            background: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .calc-results {
+            padding: 40px;
+            background: var(--primary-dark);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-main);
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .result-item {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .result-item:last-child { border: none; }
+
+        .result-label {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #94a3b8;
+            margin-bottom: 5px;
+        }
+
+        .result-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--accent);
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .result-desc {
+            font-size: 14px;
+            color: #cbd5e1;
+            margin-top: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            background: #e2e8f0;
+            padding: 5px;
+            border-radius: 8px;
+            width: fit-content;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* DETAIL CARDS EXPANSION */
+        .detail-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            border-left: 5px solid var(--primary);
+        }
+        
+        .detail-card.warning { border-left-color: var(--accent); }
+        .detail-card.danger { border-left-color: var(--danger); }
+
+        .tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #eff6ff;
+            color: var(--primary);
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body>
 
-<div class="slide-container title-bg">
-    <div style="display: grid; grid-template-columns: 1.4fr 1fr; width: 100%; height: 100%; align-items: center;">
-        <div style="padding: 80px; z-index: 5;">
-            <h1>Quantifying Engineering Risks</h1>
-            <div style="width: 120px; height: 8px; background: #f59e0b; margin: 25px 0 40px 0; border-radius: 4px;"></div>
-            <p style="color: #93c5fd; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">From Operational Friction to Commercial Impact</p>
-            <p>A Strategic Assessment for Management Review</p>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <i class="fa-solid fa-chart-pie"></i>
+            RiskQuant
         </div>
-        <div style="display: flex; justify-content: center; align-items: center; z-index: 5;">
-            <i class="fa-solid fa-chart-pie" style="font-size: 220px; color: white; opacity: 0.9;"></i>
-        </div>
-    </div>
-</div>
-
-<div class="slide-container">
-    <h2>Executive Summary</h2>
-    <div class="content-area">
-        <div class="two-column-tiled">
-            <div class="tile">
-                <h3>Option A: Precise Internal Audit</h3>
-                <p>A rigorous, data-heavy approach utilizing actual project logs.</p>
-                <ul>
-                    <li>High Accuracy</li>
-                    <li>Requires weeks of data mining</li>
-                </ul>
-            </div>
-            <div class="tile" style="border-color: #f59e0b;">
-                <h3>Option B: Industry Benchmarks</h3>
-                <p>A rapid strategic assessment applying standard industry ratios.</p>
-                <ul>
-                    <li>Immediate Results</li>
-                    <li>Best for Strategic Review</li>
-                </ul>
-            </div>
+        <button class="nav-btn active" onclick="showSection('dashboard')">
+            <i class="fa-solid fa-gauge-high"></i> Overview
+        </button>
+        <button class="nav-btn" onclick="showSection('calculator')">
+            <i class="fa-solid fa-calculator"></i> Impact Calculator
+        </button>
+        <button class="nav-btn" onclick="showSection('deep-dive')">
+            <i class="fa-solid fa-magnifying-glass-chart"></i> Detailed Breakdown
+        </button>
+        
+        <div style="margin-top: auto; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+            <small style="color: #64748b;">Engineering Dept<br>Strategic Review Tool</small>
         </div>
     </div>
-</div>
 
-<div class="slide-container">
-    <h2>The Current Risk Landscape</h2>
-    <div class="content-area">
-        <div class="icon-grid">
-            <div class="icon-card">
-                <i class="fa-solid fa-users-gear"></i>
-                <h3>Resource & Capacity</h3>
-                <p>Inefficient allocation leading to burnout.</p>
+    <!-- Main Content -->
+    <div class="main-content">
+        
+        <!-- SECTION 1: DASHBOARD OVERVIEW -->
+        <div id="dashboard" class="section active">
+            <div class="header">
+                <h1>Engineering Risk Landscape</h1>
+                <p>Strategic assessment of operational friction and commercial exposure.</p>
             </div>
-            <div class="icon-card">
-                <i class="fa-solid fa-triangle-exclamation"></i>
-                <h3>Process & Compliance</h3>
-                <p>Bypassed engineering reviews causing rework.</p>
-            </div>
-            <div class="icon-card">
-                <i class="fa-solid fa-server"></i>
-                <h3>Digital & Retention</h3>
-                <p>Loss of institutional knowledge.</p>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="slide-container">
-    <h2>Method 1: Precise Internal Audit</h2>
-    <div class="content-area">
-        <div class="img-right-layout">
-            <div>
-                <p>Calculates exact financial loss by auditing internal records.</p>
-                <ul>
-                    <li><strong>Data Source:</strong> Timesheets, VO Logs.</li>
-                    <li><strong>Best For:</strong> Justifying software budget.</li>
-                </ul>
+            <div class="card-grid">
+                <div class="card" onclick="showSection('deep-dive')">
+                    <h3>Process & Rework <i class="fa-solid fa-helmet-safety card-icon"></i></h3>
+                    <p>Risks: ED-03, ED-05, ED-06</p>
+                    <div style="font-size: 32px; font-weight: 700; color: var(--primary); margin: 10px 0;">5%</div>
+                    <p style="color: var(--text-light); font-size: 14px;">of Contract Value at Risk</p>
+                </div>
+                
+                <div class="card" onclick="showSection('deep-dive')">
+                    <h3>Admin Efficiency <i class="fa-solid fa-user-clock card-icon"></i></h3>
+                    <p>Risks: ED-02, ED-09, ED-10</p>
+                    <div style="font-size: 32px; font-weight: 700; color: var(--accent); margin: 10px 0;">30%</div>
+                    <p style="color: var(--text-light); font-size: 14px;">of Payroll Wasted</p>
+                </div>
+                
+                <div class="card" onclick="showSection('deep-dive')">
+                    <h3>Staff Retention <i class="fa-solid fa-user-xmark card-icon"></i></h3>
+                    <p>Risks: ED-04, ED-07, ED-08</p>
+                    <div style="font-size: 32px; font-weight: 700; color: var(--danger); margin: 10px 0;">50%</div>
+                    <p style="color: var(--text-light); font-size: 14px;">Replacement Cost per Exit</p>
+                </div>
             </div>
-            <div class="visual-scene"><i class="fa-solid fa-file-invoice-dollar"></i></div>
-        </div>
-    </div>
-</div>
 
-<div class="slide-container">
-    <h2>Method 1: Calculation Models</h2>
-    <div class="content-area">
-        <p><strong>1. Non-Productive Time</strong></p>
-        <div class="formula-box">Loss = Hourly Rate × Wasted Hours × Staff</div>
-        <p><strong>2. Cost of Quality</strong></p>
-        <div class="formula-box">Loss = Σ (Site Rework Costs + Design VOs)</div>
-    </div>
-</div>
-
-<div class="slide-container">
-    <h2>Method 2: Industry Benchmarks</h2>
-    <div class="content-area">
-        <div class="img-right-layout">
-            <div>
-                <p>Applies standard ratios (CII, CIPD) to estimate exposure.</p>
-                <ul>
-                    <li><strong>Data Source:</strong> Project Values, Payroll.</li>
-                    <li><strong>Best For:</strong> Strategic restructuring.</li>
-                </ul>
-            </div>
-            <div class="visual-scene"><i class="fa-solid fa-gauge-high"></i></div>
-        </div>
-    </div>
-</div>
-
-<div class="slide-container">
-    <h2>Method 2: Key Risk Multipliers</h2>
-    <div class="content-area">
-        <div class="benchmark-grid">
-            <div class="benchmark-card">
-                <div class="number">5%</div>
-                <div class="label">Rework Tax</div>
-                <p>of Total Contract Value</p>
-            </div>
-            <div class="benchmark-card">
-                <div class="number">30%</div>
-                <div class="label">Admin Drag</div>
-                <p>of Engineering Payroll</p>
-            </div>
-            <div class="benchmark-card">
-                <div class="number">50%</div>
-                <div class="label">Turnover Cost</div>
-                <p>of Annual Salary per Exit</p>
+            <div class="card" style="background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%); color: white;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                        <h2 style="color: white; margin-bottom: 10px;">Calculate Your Exposure</h2>
+                        <p style="color: #cbd5e1; max-width: 600px;">Input your specific project values and payroll data to see a live estimation of the financial impact based on industry benchmarks.</p>
+                    </div>
+                    <button onclick="showSection('calculator')" style="background: var(--accent); color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 16px;">
+                        Open Calculator <i class="fa-solid fa-arrow-right" style="margin-left: 10px;"></i>
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="slide-container">
-    <h2>Comparative Analysis</h2>
-    <div class="content-area">
-        <table>
-            <thead>
-                <tr><th>Feature</th><th>Method 1: Audit</th><th>Method 2: Benchmarks</th></tr>
-            </thead>
-            <tbody>
-                <tr><td><strong>Accuracy</strong></td><td>High (Actual Costs)</td><td>Medium (Statistical)</td></tr>
-                <tr><td><strong>Speed</strong></td><td>Slow (Weeks)</td><td>Fast (Immediate)</td></tr>
-                <tr><td><strong>Use Case</strong></td><td>CAPEX Justification</td><td>Org. Structure</td></tr>
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="slide-container bleed-image-layout">
-    <div class="content-container">
-        <h2>The "Admin Drag"</h2>
-        <h3 style="color: #f59e0b;">Risks: ED-02, ED-10</h3>
-        <p>High-value engineers spend time on manual data entry.</p>
-        <p><strong>Benchmark Impact:</strong> 30% of Payroll wasted.</p>
-    </div>
-    <div class="visual-scene"><i class="fa-solid fa-user-clock"></i></div>
-</div>
-
-<div class="slide-container bleed-image-layout">
-    <div class="content-container">
-        <h2>The "Rework Tax"</h2>
-        <h3 style="color: #f59e0b;">Risks: ED-05, ED-06</h3>
-        <p>Bypassing reviews leads to site errors.</p>
-        <p><strong>Benchmark Impact:</strong> 5% of Contract Value at risk.</p>
-    </div>
-    <div class="visual-scene"><i class="fa-solid fa-helmet-safety"></i></div>
-</div>
-
-<div class="slide-container">
-    <h2>The "Turnover Penalty"</h2>
-    <div class="content-area">
-        <div class="img-right-layout">
-             <div class="visual-scene" style="border-radius: 50%; width: 400px; height: 400px; margin: 0 auto;">
-                <i class="fa-solid fa-user-xmark" style="font-size: 100px;"></i>
+        <!-- SECTION 2: CALCULATOR -->
+        <div id="calculator" class="section">
+            <div class="header">
+                <h1>Impact Calculator</h1>
+                <p>Quantify the potential commercial loss.</p>
             </div>
-            <div>
-                <h3 style="color: #f59e0b;">Risks: ED-04, ED-07</h3>
-                <p>High attrition leads to expensive outsourcing.</p>
-                <p><strong>Benchmark Impact:</strong> Replacement costs 150% of salary.</p>
+
+            <div class="tabs">
+                <div class="tab active" onclick="switchCalcMode('benchmark')">Method 2: Rapid Benchmarks</div>
+                <div class="tab" onclick="switchCalcMode('audit')">Method 1: Internal Audit</div>
+            </div>
+
+            <!-- Benchmark Calculator -->
+            <div id="benchmark-calc" class="calculator-container">
+                <div class="calc-inputs">
+                    <h3 style="margin-top: 0; color: var(--primary);">Input Data</h3>
+                    
+                    <div class="form-group">
+                        <label>Total Contract Value (AED)</label>
+                        <input type="number" id="contractValue" value="50000000" oninput="calculateBenchmark()">
+                        <small style="color: #64748b;">Used to calculate Rework Risk (5%)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Annual Engineering Payroll (AED)</label>
+                        <input type="number" id="payroll" value="2500000" oninput="calculateBenchmark()">
+                        <small style="color: #64748b;">Used to calculate Admin Drag (30%)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Avg. Salary of Departing Staff (AED/Year)</label>
+                        <input type="number" id="avgSalary" value="120000" oninput="calculateBenchmark()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Number of Staff Exits (Last 12 Months)</label>
+                        <input type="number" id="exits" value="4" oninput="calculateBenchmark()">
+                    </div>
+                </div>
+
+                <div class="calc-results">
+                    <h3 style="margin-top: 0; color: white; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; margin-bottom: 20px;">Estimated Annual Exposure</h3>
+                    
+                    <div class="result-item">
+                        <div class="result-label">Potential Rework Costs</div>
+                        <div class="result-value" id="resRework">AED 2,500,000</div>
+                        <div class="result-desc">Based on 5% CII Benchmark</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Wasted Admin Salary</div>
+                        <div class="result-value" id="resAdmin">AED 750,000</div>
+                        <div class="result-desc">30% Efficiency Loss</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Turnover Impact</div>
+                        <div class="result-value" id="resTurnover">AED 240,000</div>
+                        <div class="result-desc">Recruitment & Ramp-up Costs</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Calculator (Hidden by default) -->
+            <div id="audit-calc" class="calculator-container" style="display: none;">
+                <div class="calc-inputs">
+                    <h3 style="margin-top: 0; color: var(--primary);">Audit Inputs</h3>
+                    
+                    <div class="form-group">
+                        <label>Avg. Hourly Rate (AED)</label>
+                        <input type="number" id="hourlyRate" value="150" oninput="calculateAudit()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Non-Productive Hours per Week (Per Person)</label>
+                        <input type="number" id="wastedHours" value="6" oninput="calculateAudit()">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Total Engineering Staff Count</label>
+                        <input type="number" id="staffCount" value="12" oninput="calculateAudit()">
+                    </div>
+                </div>
+
+                <div class="calc-results" style="background: #0f172a;"> <!-- Slightly darker for differentiation -->
+                    <h3 style="margin-top: 0; color: white; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 15px; margin-bottom: 20px;">Precise Loss Calculation</h3>
+                    
+                    <div class="result-item">
+                        <div class="result-label">Weekly Loss</div>
+                        <div class="result-value" id="resWeekly">AED 10,800</div>
+                    </div>
+
+                    <div class="result-item">
+                        <div class="result-label">Annual Loss</div>
+                        <div class="result-value" id="resAnnual">AED 561,600</div>
+                        <div class="result-desc">Assuming 52 working weeks</div>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="slide-container">
-    <div class="content-area" style="text-align: center; align-items: center;">
-        <h2 style="font-size: 60px;">Recommendation</h2>
-        <hr style="width: 100px; height: 5px; background: #f59e0b; border: none; margin: 20px auto 40px auto;">
-        <p style="max-width: 800px;">Start with <strong>Method 2 (Benchmarks)</strong> for the immediate review.</p>
-        <p style="max-width: 800px;">Follow up with <strong>Method 1</strong> for specific tool procurement.</p>
-    </div>
-</div>
+        <!-- SECTION 3: DEEP DIVE -->
+        <div id="deep-dive" class="section">
+            <div class="header">
+                <h1>Detailed Breakdown</h1>
+                <p>Analysis of specific risk categories and their benchmarks.</p>
+            </div>
 
+            <div class="detail-card warning">
+                <div style="display: flex; justify-content: space-between;">
+                    <h2>1. The "Rework Tax"</h2>
+                    <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; color: var(--accent);"></i>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <span class="tag">ED-03</span> <span class="tag">ED-05</span> <span class="tag">ED-06</span>
+                </div>
+                <p><strong>Benchmark: 5% of Total Contract Value</strong></p>
+                <p>Work proceeding without engineering approval, scope gaps, and unrealistic schedules creates a direct financial penalty. Industry studies (CII) indicate 52% of rework is attributed to poor document management and data communication.</p>
+            </div>
+
+            <div class="detail-card">
+                <div style="display: flex; justify-content: space-between;">
+                    <h2>2. The "Admin Drag"</h2>
+                    <i class="fa-solid fa-stopwatch" style="font-size: 24px; color: var(--primary);"></i>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <span class="tag">ED-02</span> <span class="tag">ED-09</span> <span class="tag">ED-10</span>
+                </div>
+                <p><strong>Benchmark: 30% of Engineering Payroll</strong></p>
+                <p>Highly paid engineers doing data entry, chasing IT for laptops, and manual document control. Lean Construction principles highlight that in unoptimized environments, value-adding engineering work drops below 50%.</p>
+            </div>
+
+            <div class="detail-card danger">
+                <div style="display: flex; justify-content: space-between;">
+                    <h2>3. The "Turnover Penalty"</h2>
+                    <i class="fa-solid fa-door-open" style="font-size: 24px; color: var(--danger);"></i>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <span class="tag">ED-04</span> <span class="tag">ED-07</span> <span class="tag">ED-08</span>
+                </div>
+                <p><strong>Benchmark: 50% of Annual Salary per Exit</strong></p>
+                <p>Costs include recruitment agency fees, visa/onboarding downtime, and the "ramp-up" period where new hires operate at partial efficiency. Loss of institutional knowledge (ED-07) compounds this cost.</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // NAVIGATION LOGIC
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+            // Show target section
+            document.getElementById(sectionId).classList.add('active');
+
+            // Activate nav button
+            // Simple logic: find button that calls this function with this ID
+            const buttons = document.querySelectorAll('.nav-btn');
+            if(sectionId === 'dashboard') buttons[0].classList.add('active');
+            if(sectionId === 'calculator') buttons[1].classList.add('active');
+            if(sectionId === 'deep-dive') buttons[2].classList.add('active');
+        }
+
+        // CALCULATOR TAB LOGIC
+        function switchCalcMode(mode) {
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(t => t.classList.remove('active'));
+            
+            if (mode === 'benchmark') {
+                tabs[0].classList.add('active');
+                document.getElementById('benchmark-calc').style.display = 'grid';
+                document.getElementById('audit-calc').style.display = 'none';
+            } else {
+                tabs[1].classList.add('active');
+                document.getElementById('benchmark-calc').style.display = 'none';
+                document.getElementById('audit-calc').style.display = 'grid';
+            }
+        }
+
+        // CALCULATION LOGIC: BENCHMARK
+        function calculateBenchmark() {
+            const val = parseFloat(document.getElementById('contractValue').value) || 0;
+            const payroll = parseFloat(document.getElementById('payroll').value) || 0;
+            const salary = parseFloat(document.getElementById('avgSalary').value) || 0;
+            const exits = parseFloat(document.getElementById('exits').value) || 0;
+
+            const rework = val * 0.05;
+            const admin = payroll * 0.30;
+            const turnover = salary * exits * 0.5;
+
+            document.getElementById('resRework').innerText = formatAED(rework);
+            document.getElementById('resAdmin').innerText = formatAED(admin);
+            document.getElementById('resTurnover').innerText = formatAED(turnover);
+        }
+
+        // CALCULATION LOGIC: AUDIT
+        function calculateAudit() {
+            const rate = parseFloat(document.getElementById('hourlyRate').value) || 0;
+            const hours = parseFloat(document.getElementById('wastedHours').value) || 0;
+            const staff = parseFloat(document.getElementById('staffCount').value) || 0;
+
+            const weekly = rate * hours * staff;
+            const annual = weekly * 52;
+
+            document.getElementById('resWeekly').innerText = formatAED(weekly);
+            document.getElementById('resAnnual').innerText = formatAED(annual);
+        }
+
+        function formatAED(num) {
+            return 'AED ' + num.toLocaleString('en-US', {maximumFractionDigits: 0});
+        }
+
+        // Initialize calculators
+        calculateBenchmark();
+        calculateAudit();
+
+    </script>
 </body>
 </html>
