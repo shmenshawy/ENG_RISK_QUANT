@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantifying Engineering Risks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+    /* --- 1. GLOBAL RESET --- */
+    * { box-sizing: border-box; }
+
+    body {
+        background-color: #555; /* Dark grey for screen viewing */
+        margin: 0;
+        padding: 40px 0;
+        font-family: 'Roboto', sans-serif;
+        
+        /* FIX: Using Block layout instead of Flex to prevent print errors */
+        display: block; 
+        text-align: center; /* Centers slides on screen */
+    }
+
+    /* --- 2. SLIDE CONTAINER --- */
+    .slide-container {
+        /* Screen Settings */
+        display: inline-block; /* Allows centering via text-align */
+        vertical-align: top;
+        text-align: left; /* Resets text alignment inside the slide */
+        position: relative;
+        width: 1280px;
+        height: 720px;
+        background-color: #ffffff;
+        margin-bottom: 50px; /* Space between slides on screen */
+        padding: 50px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        overflow: hidden; 
+    }
+
+    /* Slide Background Pattern */
+    .slide-container::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background-image: 
+            linear-gradient(rgba(224, 231, 255, 0.3) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(224, 231, 255, 0.3) 1px, transparent 1px);
+        background-size: 40px 40px;
+        z-index: 0;
+        pointer-events: none;
+    }
+
+    /* Bottom Color Bar */
+    .slide-container::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0;
+        width: 100%;
+        height: 8px;
+        background: linear-gradient(90deg, #1e3a8a 0%, #f59e0b 100%);
+        z-index: 2;
+    }
+
+    /* Ensure content sits above background */
+    .slide-container > * { position: relative; z-index: 1; }
+
+    /* --- 3. TYPOGRAPHY --- */
+    h1, h2, h3 { font-family: 'Montserrat', sans-serif; margin: 0; line-height: 1.2; }
+    h1 { font-size: 56px; font-weight: 700; color: #1e3a8a; }
+    h2 { font-size: 42px; font-weight: 600; color: #1e3a8a; margin-bottom: 30px; }
+    h3 { font-size: 28px; font-weight: 600; color: #334155; margin-bottom: 15px; }
+    p, li, td { color: #475569; font-size: 20px; line-height: 1.6; }
+
+    /* Lists */
+    ul { list-style: none; padding: 0; }
+    ul li { padding-left: 30px; position: relative; margin-bottom: 12px; }
+    ul li::before {
+        content: '\f0da'; font-family: 'Font Awesome 6 Free'; font-weight: 900;
+        color: #f59e0b; position: absolute; left: 0; top: 2px;
+    }
+
+    /* --- 4. INTERNAL LAYOUTS --- */
+    /* Flex Helper for inside slides */
+    .content-area { display: flex; flex-direction: column; justify-content: center; height: 100%; width: 100%; }
+
+    /* Title Slide */
+    .slide-container.title-bg {
+        background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+        padding: 0;
+    }
+    .slide-container.title-bg h1 { color: white; }
+    .slide-container.title-bg p { color: #cbd5e1; }
+    
+    /* Visual Box */
+    .visual-scene {
+        width: 100%; height: 100%; min-height: 400px;
+        background: #f8fafc; border: 1px solid #cbd5e1;
+        display: flex; justify-content: center; align-items: center;
+        border-radius: 8px;
+    }
+    .visual-scene i { font-size: 140px; color: #1e3a8a; }
+
+    /* Columns */
+    .two-column-tiled { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; height: 100%; }
+    .tile { background: #f8fafc; border-left: 5px solid #1e3a8a; padding: 40px; display: flex; flex-direction: column; justify-content: center; }
+    .img-right-layout { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 50px; align-items: center; height: 100%; }
+    
+    /* Tables & Formulas */
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { background: #1e3a8a; color: white; padding: 15px; text-align: left; }
+    td { padding: 15px; border-bottom: 1px solid #e2e8f0; background: white; }
+    .formula-box { background: #1e293b; color: white; padding: 20px; border-radius: 8px; font-family: monospace; display: flex; justify-content: center; margin-bottom: 20px; }
+    
+    /* Benchmarks */
+    .benchmark-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; text-align: center; }
+    .benchmark-card { background: #eff6ff; padding: 40px 20px; border: 1px solid #bfdbfe; border-radius: 12px; }
+    .benchmark-card .number { font-size: 80px; font-weight: 700; color: #1e3a8a; }
+
+    /* Bleed Layout */
+    .slide-container.bleed-image-layout { display: grid; grid-template-columns: 1fr 1fr; padding: 0; gap: 0; }
+    .slide-container.bleed-image-layout .content-container { padding: 60px; display: flex; flex-direction: column; justify-content: center; }
+    .slide-container.bleed-image-layout .visual-scene { height: 720px; border-radius: 0; border: none; }
+    
+    /* Icon Grid */
+    .icon-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
+    .icon-card { background: white; border: 1px solid #e2e8f0; padding: 30px; text-align: center; border-radius: 8px; }
+    .icon-card i { font-size: 48px; color: #1e3a8a; margin-bottom: 20px; }
+
+    /* --- 5. PRINT / PDF SETTINGS (CRITICAL) --- */
+    @media print {
+        @page {
+            size: 1280px 720px; /* Exact slide size */
+            margin: 0;          /* Remove printer margins */
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: white;
+            /* Force block layout to ensure pages break correctly */
+            display: block !important; 
+        }
+
+        .slide-container {
+            /* Forces a page break after every slide */
+            break-after: page !important;
+            page-break-after: always !important;
+            
+            /* Resets screen margins */
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            
+            /* Ensures strict sizing */
+            width: 1280px !important;
+            height: 720px !important;
+            display: block !important;
+            overflow: hidden !important;
+        }
+
+        /* Prevents extra blank page at the end */
+        .slide-container:last-of-type {
+            break-after: avoid !important;
+            page-break-after: avoid !important;
+        }
+    }
+    </style>
+</head>
+<body>
+
+<div class="slide-container title-bg">
+    <div style="display: grid; grid-template-columns: 1.4fr 1fr; width: 100%; height: 100%; align-items: center;">
+        <div style="padding: 80px; z-index: 5;">
+            <h1>Quantifying Engineering Risks</h1>
+            <div style="width: 120px; height: 8px; background: #f59e0b; margin: 25px 0 40px 0; border-radius: 4px;"></div>
+            <p style="color: #93c5fd; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;">From Operational Friction to Commercial Impact</p>
+            <p>A Strategic Assessment for Management Review</p>
+        </div>
+        <div style="display: flex; justify-content: center; align-items: center; z-index: 5;">
+            <i class="fa-solid fa-chart-pie" style="font-size: 220px; color: white; opacity: 0.9;"></i>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container">
+    <h2>Executive Summary</h2>
+    <div class="content-area">
+        <div class="two-column-tiled">
+            <div class="tile">
+                <h3>Option A: Precise Internal Audit</h3>
+                <p>A rigorous, data-heavy approach utilizing actual project logs.</p>
+                <ul>
+                    <li>High Accuracy</li>
+                    <li>Requires weeks of data mining</li>
+                </ul>
+            </div>
+            <div class="tile" style="border-color: #f59e0b;">
+                <h3>Option B: Industry Benchmarks</h3>
+                <p>A rapid strategic assessment applying standard industry ratios.</p>
+                <ul>
+                    <li>Immediate Results</li>
+                    <li>Best for Strategic Review</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container">
+    <h2>The Current Risk Landscape</h2>
+    <div class="content-area">
+        <div class="icon-grid">
+            <div class="icon-card">
+                <i class="fa-solid fa-users-gear"></i>
+                <h3>Resource & Capacity</h3>
+                <p>Inefficient allocation leading to burnout.</p>
+            </div>
+            <div class="icon-card">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <h3>Process & Compliance</h3>
+                <p>Bypassed engineering reviews causing rework.</p>
+            </div>
+            <div class="icon-card">
+                <i class="fa-solid fa-server"></i>
+                <h3>Digital & Retention</h3>
+                <p>Loss of institutional knowledge.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container">
+    <h2>Method 1: Precise Internal Audit</h2>
+    <div class="content-area">
+        <div class="img-right-layout">
+            <div>
+                <p>Calculates exact financial loss by auditing internal records.</p>
+                <ul>
+                    <li><strong>Data Source:</strong> Timesheets, VO Logs.</li>
+                    <li><strong>Best For:</strong> Justifying software budget.</li>
+                </ul>
+            </div>
+            <div class="visual-scene"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container">
+    <h2>Method 1: Calculation Models</h2>
+    <div class="content-area">
+        <p><strong>1. Non-Productive Time</strong></p>
+        <div class="formula-box">Loss = Hourly Rate × Wasted Hours × Staff</div>
+        <p><strong>2. Cost of Quality</strong></p>
+        <div class="formula-box">Loss = Σ (Site Rework Costs + Design VOs)</div>
+    </div>
+</div>
+
+<div class="slide-container">
+    <h2>Method 2: Industry Benchmarks</h2>
+    <div class="content-area">
+        <div class="img-right-layout">
+            <div>
+                <p>Applies standard ratios (CII, CIPD) to estimate exposure.</p>
+                <ul>
+                    <li><strong>Data Source:</strong> Project Values, Payroll.</li>
+                    <li><strong>Best For:</strong> Strategic restructuring.</li>
+                </ul>
+            </div>
+            <div class="visual-scene"><i class="fa-solid fa-gauge-high"></i></div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container">
+    <h2>Method 2: Key Risk Multipliers</h2>
+    <div class="content-area">
+        <div class="benchmark-grid">
+            <div class="benchmark-card">
+                <div class="number">5%</div>
+                <div class="label">Rework Tax</div>
+                <p>of Total Contract Value</p>
+            </div>
+            <div class="benchmark-card">
+                <div class="number">30%</div>
+                <div class="label">Admin Drag</div>
+                <p>of Engineering Payroll</p>
+            </div>
+            <div class="benchmark-card">
+                <div class="number">50%</div>
+                <div class="label">Turnover Cost</div>
+                <p>of Annual Salary per Exit</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container">
+    <h2>Comparative Analysis</h2>
+    <div class="content-area">
+        <table>
+            <thead>
+                <tr><th>Feature</th><th>Method 1: Audit</th><th>Method 2: Benchmarks</th></tr>
+            </thead>
+            <tbody>
+                <tr><td><strong>Accuracy</strong></td><td>High (Actual Costs)</td><td>Medium (Statistical)</td></tr>
+                <tr><td><strong>Speed</strong></td><td>Slow (Weeks)</td><td>Fast (Immediate)</td></tr>
+                <tr><td><strong>Use Case</strong></td><td>CAPEX Justification</td><td>Org. Structure</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="slide-container bleed-image-layout">
+    <div class="content-container">
+        <h2>The "Admin Drag"</h2>
+        <h3 style="color: #f59e0b;">Risks: ED-02, ED-10</h3>
+        <p>High-value engineers spend time on manual data entry.</p>
+        <p><strong>Benchmark Impact:</strong> 30% of Payroll wasted.</p>
+    </div>
+    <div class="visual-scene"><i class="fa-solid fa-user-clock"></i></div>
+</div>
+
+<div class="slide-container bleed-image-layout">
+    <div class="content-container">
+        <h2>The "Rework Tax"</h2>
+        <h3 style="color: #f59e0b;">Risks: ED-05, ED-06</h3>
+        <p>Bypassing reviews leads to site errors.</p>
+        <p><strong>Benchmark Impact:</strong> 5% of Contract Value at risk.</p>
+    </div>
+    <div class="visual-scene"><i class="fa-solid fa-helmet-safety"></i></div>
+</div>
+
+<div class="slide-container">
+    <h2>The "Turnover Penalty"</h2>
+    <div class="content-area">
+        <div class="img-right-layout">
+             <div class="visual-scene" style="border-radius: 50%; width: 400px; height: 400px; margin: 0 auto;">
+                <i class="fa-solid fa-user-xmark" style="font-size: 100px;"></i>
+            </div>
+            <div>
+                <h3 style="color: #f59e0b;">Risks: ED-04, ED-07</h3>
+                <p>High attrition leads to expensive outsourcing.</p>
+                <p><strong>Benchmark Impact:</strong> Replacement costs 150% of salary.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="slide-container">
+    <div class="content-area" style="text-align: center; align-items: center;">
+        <h2 style="font-size: 60px;">Recommendation</h2>
+        <hr style="width: 100px; height: 5px; background: #f59e0b; border: none; margin: 20px auto 40px auto;">
+        <p style="max-width: 800px;">Start with <strong>Method 2 (Benchmarks)</strong> for the immediate review.</p>
+        <p style="max-width: 800px;">Follow up with <strong>Method 1</strong> for specific tool procurement.</p>
+    </div>
+</div>
+
+</body>
+</html>
